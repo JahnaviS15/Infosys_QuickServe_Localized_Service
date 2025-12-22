@@ -388,7 +388,7 @@ const AdminDashboard = ({ user, logout }) => {
                       <td style={{ padding: '1rem' }}>{booking.user_name}</td>
                       <td style={{ padding: '1rem' }}>{booking.provider_name}</td>
                       <td style={{ padding: '1rem' }}>{booking.date}</td>
-                      <td style={{ padding: '1rem' }}>${booking.amount}</td>
+                      <td style={{ padding: '1rem' }}>₹{booking.amount}</td>
                       <td style={{ padding: '1rem' }}>
                         <span style={{
                           padding: '0.25rem 0.75rem',

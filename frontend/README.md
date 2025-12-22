@@ -1,70 +1,255 @@
-# Getting Started with Create React App
+# BookTrack – Full Project Setup & Run Guide
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This guide explains how to **run the complete BookTrack project from scratch** on a local machine. The project is a **full-stack application** consisting of:
 
-## Available Scripts
+* **Frontend**: React + CRACO + Tailwind CSS
+* **Backend**: FastAPI (Python)
+* **Database**: MongoDB
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 1. Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Ensure the following are installed on your system:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### General
 
-### `npm test`
+* **Git**
+* **Node.js** (v18 or later recommended)
+* **Yarn** (`npm install -g yarn`)
+* **Python** (v3.10+ recommended)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Database
 
-### `npm run build`
+* **MongoDB Community Server**
+* **MongoDB Compass** (for viewing data)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Verify installations:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+node -v
+npm -v
+yarn -v
+python --version
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 2. Project Structure
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+my_project/
+├── backend/        # FastAPI backend
+├── frontend/       # React frontend
+└── README.md
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 3. Backend Setup (FastAPI)
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Step 1: Navigate to backend folder
 
-## Learn More
+```bash
+cd backend
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Step 2: Create & activate virtual environment (recommended)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+python -m venv venv
+venv\Scripts\activate   # Windows
+```
 
-### Code Splitting
+### Step 3: Install dependencies
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+pip install -r requirements.txt
+```
 
-### Analyzing the Bundle Size
+> ⚠️ If `emergentintegrations` causes issues, it can be safely commented out or removed.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Step 4: Environment variables
 
-### Making a Progressive Web App
+Create a `.env` file in `backend/` (if not already present):
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```env
+MONGO_URI=mongodb://localhost:27017
+DATABASE_NAME=booktrack_db
+JWT_SECRET=your_secret_key
+```
 
-### Advanced Configuration
+### Step 5: Start the backend server
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```bash
+uvicorn server:app --reload
+```
 
-### Deployment
+Backend will run at:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```
+http://127.0.0.1:8000
+```
 
-### `npm run build` fails to minify
+Swagger API docs:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## 4. Database Setup (MongoDB)
+
+1. Ensure **MongoDB service is running**
+2. Open **MongoDB Compass**
+3. Connect using:
+
+```
+mongodb://localhost:27017
+```
+
+4. Database `booktrack_db` and collections (`users`, `services`, `bookings`) will be created automatically
+
+---
+
+## 5. Frontend Setup (React)
+
+### Step 1: Navigate to frontend folder
+
+```bash
+cd frontend
+```
+
+### Step 2: Install dependencies using Yarn
+
+```bash
+yarn install
+```
+
+> ⚠️ Warnings about peer dependencies are expected and safe.
+
+### Step 3: Environment variables
+
+Create or update `.env` in `frontend/`:
+
+```env
+REACT_APP_BACKEND_URL=http://127.0.0.1:8000
+REACT_APP_ENABLE_VISUAL_EDITS=false
+ENABLE_HEALTH_CHECK=false
+```
+
+> ⚠️ Ensure **no Emergent preview URLs** are present.
+
+### Step 4: Remove Emergent watermark (already done)
+
+The Emergent badge was removed from:
+
+```
+frontend/public/index.html
+```
+
+### Step 5: Start the frontend
+
+```bash
+yarn start
+```
+
+Frontend will run at:
+
+```
+http://localhost:3000
+```
+
+---
+
+## 6. Running the Full Project (Quick Order)
+
+1. Start **MongoDB service**
+2. Start **Backend**
+
+```bash
+cd backend
+uvicorn server:app --reload
+```
+
+3. Start **Frontend**
+
+```bash
+cd frontend
+yarn start
+```
+
+---
+
+## 7. Testing the Application
+
+### API Testing
+
+* Open Swagger UI: `http://127.0.0.1:8000/docs`
+* Test `/auth/register` and `/auth/login`
+
+### UI Testing
+
+* Register/Login from the frontend UI
+* Create services (provider)
+* Book services (user)
+
+### Database Verification
+
+* Open MongoDB Compass
+* Check collections:
+
+  * `users`
+  * `services`
+  * `bookings`
+
+---
+
+## 8. Common Issues & Fixes
+
+### CRACO not found
+
+```bash
+yarn add @craco/craco --dev
+```
+
+### Dependency conflicts
+
+Use **Yarn only** (do not mix npm and yarn).
+
+### Changes not reflecting
+
+Restart frontend and hard refresh browser:
+
+```
+Ctrl + Shift + R
+```
+
+---
+
+## 9. Tech Stack Summary
+
+* **Frontend**: React, CRACO, Tailwind CSS
+* **Backend**: FastAPI, JWT Authentication
+* **Database**: MongoDB
+* **API Docs**: Swagger UI
+
+---
+
+## 10. Project Status
+
+✅ Full stack running successfully
+✅ Authentication working
+✅ Database integration verified
+✅ Clean UI (no watermark)
+
+---
+
+### Author
+
+BookTrack – Service Booking Platform
+
+---
+
+✨ Project is fully functional and demo-ready.

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { MapPin, Clock, DollarSign, Star, Calendar } from 'lucide-react';
+import { MapPin, Clock, Star, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import PaymentDialog from "../components/ui/PaymentDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -103,39 +104,37 @@ const UserDashboard = ({ user, logout, socket }) => {
 
       toast.success('Booking created! Proceeding to payment...');
       setShowBookingModal(false);
-      
+
       // Redirect to payment
-      handlePayment(response.data.id);
+      //handlePayment(response.data.id);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create booking');
+      toast.success("Booking created! Waiting for provider to complete the service.");
     } finally {
       setLoading(false);
     }
   };
 
   const handlePayment = async (bookingId) => {
-    setLoading(true);
     try {
-      const originUrl = window.location.origin;
-      const response = await axios.post(
-        `${API}/payments/create-checkout`,
+      await axios.post(
+        `${API}/payments/confirm-mock`,
         null,
         {
-          params: {
-            booking_id: bookingId,
-            origin_url: originUrl
+          params: { booking_id: bookingId },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }
       );
 
-      window.location.href = response.data.url;
+      toast.success("Payment successful!");
+      fetchBookings();   // refresh UI
     } catch (error) {
-      toast.error('Failed to create payment session');
-    } finally {
-      setLoading(false);
+      toast.error(error.response?.data?.detail || "Payment failed");
     }
   };
+
+
 
   const handleSubmitReview = async () => {
     setLoading(true);
@@ -288,8 +287,7 @@ const UserDashboard = ({ user, logout, socket }) => {
                         <span>{service.duration} mins</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <DollarSign size={16} />
-                        <span>${service.price}</span>
+                        <span>₹{service.price}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Star size={16} fill="#f59e0b" color="#f59e0b" />
@@ -346,8 +344,7 @@ const UserDashboard = ({ user, logout, socket }) => {
                         <span>{booking.date} at {booking.time}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <DollarSign size={16} />
-                        <span>${booking.amount}</span>
+                        <span> ₹{booking.amount}</span>
                       </div>
                       <div><strong>Payment:</strong> {booking.payment_status}</div>
                     </div>
@@ -364,16 +361,16 @@ const UserDashboard = ({ user, logout, socket }) => {
                         Leave Review
                       </button>
                     )}
-                    {booking.payment_status === 'pending' && booking.status === 'pending' && (
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => handlePayment(booking.id)}
-                        style={{ marginTop: '1rem' }}
-                        data-testid={`pay-now-button-${booking.id}`}
-                      >
-                        Pay Now
-                      </button>
+                    {booking.payment_status === 'pending' && booking.status === 'completed' && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <PaymentDialog
+                          booking={booking}
+                          onConfirm={() => handlePayment(booking.id)}
+                        />
+                      </div>
                     )}
+
+
                   </div>
                 </div>
               ))}
@@ -417,7 +414,7 @@ const UserDashboard = ({ user, logout, socket }) => {
             </div>
             <div style={{ padding: '1rem', background: '#f5f5f7', borderRadius: '8px' }}>
               <div><strong>Service:</strong> {selectedService?.name}</div>
-              <div><strong>Price:</strong> ${selectedService?.price}</div>
+              <div><strong>Price:</strong> ₹{selectedService?.price}</div>
               <div><strong>Duration:</strong> {selectedService?.duration} minutes</div>
             </div>
             <Button onClick={handleBookService} disabled={loading} data-testid="confirm-booking-button">

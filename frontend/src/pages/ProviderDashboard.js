@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, MapPin, Clock, DollarSign, Star, Calendar, Edit, Trash } from 'lucide-react';
+import { Plus, MapPin, Clock, Star, Calendar, Edit, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -47,12 +47,18 @@ const ProviderDashboard = ({ user, logout, socket }) => {
 
   const fetchServices = async () => {
     try {
-      const response = await axios.get(`${API}/services/provider/my-services`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${API}/services`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
+
       setServices(response.data);
     } catch (error) {
-      toast.error('Failed to fetch services');
+      console.error(error);
+      toast.error("Failed to fetch services");
     }
   };
 
@@ -68,6 +74,10 @@ const ProviderDashboard = ({ user, logout, socket }) => {
   };
 
   const handleServiceSubmit = async () => {
+    if (!serviceForm.price || serviceForm.price <= 0) {
+      toast.error("Price must be greater than ₹0");
+      return;
+    }
     setLoading(true);
     try {
       if (editingService) {
@@ -85,7 +95,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
         );
         toast.success('Service created successfully');
       }
-      
+
       setShowServiceModal(false);
       setEditingService(null);
       resetForm();
@@ -230,8 +240,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                         <span>{service.duration} mins</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <DollarSign size={16} />
-                        <span>${service.price}</span>
+                        <span>₹{service.price}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Star size={16} fill="#f59e0b" color="#f59e0b" />
@@ -296,12 +305,11 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                         <span>{booking.date} at {booking.time}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <DollarSign size={16} />
-                        <span>${booking.amount}</span>
+                        <span> ₹{booking.amount}</span>
                       </div>
                       <div><strong>Payment:</strong> {booking.payment_status}</div>
                     </div>
-                    
+
                     {booking.status === 'pending' && (
                       <div className="service-actions" style={{ marginTop: '1rem' }}>
                         <button
@@ -320,7 +328,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                         </button>
                       </div>
                     )}
-                    
+
                     {booking.status === 'accepted' && (
                       <button
                         className="btn btn-primary"
@@ -331,7 +339,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                         Start Journey (En-route)
                       </button>
                     )}
-                    
+
                     {booking.status === 'en-route' && (
                       <button
                         className="btn btn-primary"
@@ -342,7 +350,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                         Start Service
                       </button>
                     )}
-                    
+
                     {booking.status === 'started' && (
                       <button
                         className="btn btn-primary"
@@ -384,7 +392,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                 data-testid="service-name-input"
               />
             </div>
-            
+
             <div>
               <Label>Description</Label>
               <Textarea
@@ -395,7 +403,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                 data-testid="service-description-input"
               />
             </div>
-            
+
             <div>
               <Label>Category</Label>
               <Select value={serviceForm.category} onValueChange={(v) => setServiceForm({ ...serviceForm, category: v })}>
@@ -411,28 +419,28 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
-              <Label>Price ($)</Label>
+              <Label>Price (₹)</Label>
               <Input
                 type="number"
                 value={serviceForm.price}
                 onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
-                placeholder="50"
+                placeholder="500"
                 data-testid="service-price-input"
               />
             </div>
-            
+
             <div>
               <Label>Location</Label>
               <Input
                 value={serviceForm.location}
                 onChange={(e) => setServiceForm({ ...serviceForm, location: e.target.value })}
-                placeholder="e.g., New York, NY"
+                placeholder="e.g., Bengaluru, Karnataka"
                 data-testid="service-location-input"
               />
             </div>
-            
+
             <div>
               <Label>Duration (minutes)</Label>
               <Input
@@ -443,7 +451,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                 data-testid="service-duration-input"
               />
             </div>
-            
+
             <div>
               <Label>Image URL</Label>
               <Input
@@ -453,7 +461,7 @@ const ProviderDashboard = ({ user, logout, socket }) => {
                 data-testid="service-image-url-input"
               />
             </div>
-            
+
             <Button onClick={handleServiceSubmit} disabled={loading} data-testid="save-service-button">
               {loading ? 'Saving...' : (editingService ? 'Update Service' : 'Create Service')}
             </Button>

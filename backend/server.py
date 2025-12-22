@@ -13,12 +13,12 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 from jose import jwt, JWTError
 import socketio
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionResponse,
-    CheckoutStatusResponse,
-    CheckoutSessionRequest
-)
+# from emergentintegrations.payments.stripe.checkout import (
+#     StripeCheckout,
+#     CheckoutSessionResponse,
+#     CheckoutStatusResponse,
+#     CheckoutSessionRequest
+# )
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,7 +34,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 # Stripe Configuration
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
+#
 
 # Security
 security = HTTPBearer()
@@ -533,67 +533,89 @@ async def get_service_reviews(service_id: str):
     reviews = await db.reviews.find({"service_id": service_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return reviews
 
-# Payment Routes
+# =========================
+# Payment Routes (MOCK)
+# =========================
+
 @api_router.post("/payments/create-checkout")
-async def create_checkout_session(
-    request: Request,
+async def create_mock_checkout(
     booking_id: str,
-    origin_url: str,
     current_user: dict = Depends(get_current_user)
 ):
     # Get booking
     booking = await db.bookings.find_one({"id": booking_id})
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-    
-    if booking['user_id'] != current_user['id']:
+
+    if booking["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if booking['payment_status'] == 'paid':
-        raise HTTPException(status_code=400, detail="Already paid")
-    
-    # Initialize Stripe
-    host_url = origin_url
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    
-    # Create checkout session
-    success_url = f"{origin_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin_url}/payment-cancel"
-    
-    checkout_request = CheckoutSessionRequest(
-        amount=float(booking['amount']),
-        currency="usd",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "booking_id": booking_id,
-            "user_id": current_user['id']
+
+    if booking["payment_status"] == "paid":
+        return {
+            "success": True,
+            "message": "Already paid",
+            "session_id": "mock_existing"
         }
-    )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
-    
-    # Create payment transaction record
+
+    # Create mock payment transaction
     transaction = PaymentTransaction(
-        session_id=session.session_id,
+        session_id=f"mock_{uuid.uuid4()}",
         booking_id=booking_id,
-        user_id=current_user['id'],
-        amount=float(booking['amount']),
-        currency="usd",
+        user_id=current_user["id"],
+        amount=float(booking["amount"]),
+        currency="INR",
         payment_status="pending",
-        metadata={"booking_id": booking_id}
+        metadata={"mode": "mock"}
     )
-    
+
     await db.payment_transactions.insert_one(transaction.model_dump())
-    
+
+    # Mark booking as paid
+    await db.bookings.update_one(
+        {"id": booking_id},
+        {"$set": {"payment_status": "paid"}}
+    )
+
     return {
-        "url": session.url,
-        "session_id": session.session_id
+        "success": True,
+        "message": "Payment successful (mock)",
+        "session_id": transaction.session_id
     }
 
-@api_router.get("/payments/checkout-status/{session_id}")
-async def get_checkout_status(session_id: str, current_user: dict = Depends(get_current_user)):
+@api_router.post("/payments/confirm-mock")
+async def confirm_mock_payment(
+    booking_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    booking = await db.bookings.find_one({"id": booking_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if booking["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    # Allow payment ONLY if provider completed the job
+    if booking["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Payment allowed only after service completion"
+        )
+
+    await db.payment_transactions.update_one(
+        {"booking_id": booking_id},
+        {"$set": {"payment_status": "paid"}}
+    )
+
+    await db.bookings.update_one(
+        {"id": booking_id},
+        {"$set": {"payment_status": "paid"}}
+    )
+
+    return {"success": True, "message": "Mock payment successful"}
+
+
+#@api_router.get("/payments/checkout-status/{session_id}")
+#async def get_checkout_status(session_id: str):    
     # Get transaction
     transaction = await db.payment_transactions.find_one({"session_id": session_id})
     if not transaction:
@@ -629,8 +651,8 @@ async def get_checkout_status(session_id: str, current_user: dict = Depends(get_
         "booking_id": transaction['booking_id']
     }
 
-@api_router.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
+#@api_router.post("/webhook/stripe")
+#async def stripe_webhook(request: Request):
     body = await request.body()
     signature = request.headers.get("Stripe-Signature")
     
